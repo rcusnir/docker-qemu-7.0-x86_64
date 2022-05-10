@@ -1,0 +1,21 @@
+version: '3'
+services:
+  qemu-base:
+    build:
+      network: host
+      context: ./empty
+      dockerfile: ../Dockerfile_base
+    image: local/qemu
+    privileged: true
+    environment:
+        - DISPLAY
+    ports:
+        - "9900:5900"
+    volumes: 
+        - /dev/kvm:/dev/kvm
+        - /tmp/.X11-unix:/tmp/.X11-unix
+        - /data/tmp/macOS-Simple-KVM:/tmp/macOS-Simple-KVM
+    dns:
+        - 8.8.8.8
+    command: ["sh","-c","cd /runtime/OS/start.sh"]
+

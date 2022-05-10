@@ -1,0 +1,97 @@
+
+FROM oraclelinux:8.5
+
+MAINTAINER Ruslan Cusnir "ruslancusnir@gmail.com"
+
+
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+
+ENV GOSU_VERSION=1.14
+
+
+RUN echo "Run installation process" \
+	&& curl -o /bin/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh && chmod ugo+x /bin/wait-for-it.sh \
+	&& dnf -y install \
+                oraclelinux-release-el8 \
+                oracle-instantclient-release-el8 \
+                oracle-epel-release-el8 \
+                oraclelinux-developer-release-el8 \
+                glibc-locale-source \
+                glibc-langpack-en \
+                yum-utils \
+	&& dnf --nogpgcheck -y install \
+		unzip \
+		git \
+		jq \
+		which \
+		wget \
+		bzip2 \
+		file \
+		bind-utils \
+		net-tools \
+		telnet \
+		sudo \		
+		langpacks-en \
+		glibc-langpack-en \
+		glibc-locale-source \
+		ksh \		
+	&& dnf clean all && rm -rf /var/cache/yum && rm -f /var/log/yum.log \
+	&& localedef -i en_US -f UTF-8 en_US.UTF-8 \
+	&& curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" \
+    && chmod +x /usr/local/bin/gosu \    
+    && gosu nobody true \
+    && cd /tmp \
+	&& git clone https://gitlab.com/qemu-project/qemu.git \
+	&& cd qemu \
+	&& git submodule init \
+	&& git submodule update --recursive \
+&& yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL8/codeready/builder/x86_64 \
+&& dnf -y install git glib2-devel libfdt-devel pixman-devel zlib-devel bzip2 ninja-build python3 \
+&& dnf -y install libaio-devel libcap-ng-devel libiscsi-devel \
+&& dnf -y install make gcc gcc-c++ clang sparse liburing* libnfs* libseccomp* spice-server-devel libcurl-devel \
+libudev-devel libzstd-devel ncurses-devel SDL2-devel libssh-devel libssh2-devel bzip2-devel libzip-devel \
+libxkbcommon-devel libevdev-devel pulseaudio-libs-devel alsa-lib-devel jack-audio-connection-kit-devel \
+virglrenderer-devel brlapi-devel librados-devel librbd-devel glusterfs-api-devel libepoxy-devel mesa-libgbm-devel \
+gnutls-devel gtk3-devel libpng-devel libjpeg-turbo-devel cyrus-sasl-devel pam-devel snappy-devel lzo-devel \
+numactl-devel libibumad rdma-core-devel libibverbs vte291-devel usbredir-devel libusb-devel libpmem-devel daxctl-devel \
+keyutils-libs-devel fuse3-devel libbpf-devel valgrind-devel libdrm-devel iasl \
+&& cd /tmp/qemu \
+	&& ./configure --target-list="x86_64-softmmu,x86_64-linux-user" \
+	&& make -j15 \
+	&& make install \
+&& cd /tmp && rm -Rf /tmp/qemu && dnf clean all
+
+#RUN cd /tmp \
+#    && git clone --depth 1 --recursive https://github.com/kholia/OSX-KVM.git
+
+#RUN echo "options kvm_intel nested=1">/etc/modprobe.d/kvm.conf \
+#   && echo "options kvm_intel emulate_invalid_guest_state=0">>/etc/modprobe.d/kvm.conf \
+#   && echo "options kvm ignore_msrs=1 report_ignored_msrs=0">>/etc/modprobe.d/kvm.conf 
+
+#RUN cd /tmp/OSX-KVM \
+#    && ./fetch-macOS-v2.py -s catalina
+
+WORKDIR /runtime
+
+#RUN cd /tmp/OSX-KVM \
+#    && qemu-img convert BaseSystem.dmg -O raw BaseSystem.img 
+
+#RUN dnf install "https://download-ib01.fedoraproject.org/pub/fedora/linux/releases/34/Everything/x86_64/os/Packages/d/dmg2img-1.6.7-11.20170502.git.f16f247.fc34.x86_64.rpm"
+
+#RUN cd /tmp/OSX-KVM \
+#    &&qemu-img create -f qcow2 mac_hdd_ng.img 128G
+
+#RUN cd /tmp \
+#    && git clone https://github.com/foxlet/macOS-Simple-KVM.git 
+
+#RUN cd macOS-Simple-KVM \
+#    && ./jumpstart.sh -c
+
+
+ENV LC_ALL en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+
+CMD ["/bin/bash"]
